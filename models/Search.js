@@ -4,7 +4,11 @@ const SearchSchema = mongoose.Schema(
   {
     name: {
       type: String,
-      unique: true,
+    },
+
+    tracked: {
+      type: Boolean,
+      default: true,
     },
   },
   { timestamps: true }

@@ -35,68 +35,60 @@ app.post("/api/scrape", async (req, res) => {
     const products = [];
     const productElements = await page.$$(`.s-card-container`);
 
-    const searchText = await Search.find({ name: searchItem });
+    const newSearch = await Search.create({ name: searchItem });
 
-    if (!searchText) {
-      const newSearch = await Search.create({ name: searchItem });
-
-      for (const element of productElements) {
-        const nameElement = await element.$(
-          ".a-size-base-plus.a-color-base.a-text-normal"
-        );
-        if (!nameElement) {
-          console.log("Name element not found. Skipping...");
-          continue;
-        }
-
-        const name = await nameElement.evaluate((el) => el.textContent.trim());
-
-        const img = await element.$eval("img.s-image", (img) => img.src);
-        const urlHandle = await element.$(`h2 a`);
-        const url = await (await urlHandle.getProperty("href")).jsonValue();
-        await page.waitForSelector(".a-price .a-offscreen", { visible: true });
-        const priceText = await page.$eval(
-          ".a-price .a-offscreen",
-          (span) => span.textContent
-        );
-
-        const numericPriceText = priceText.replace(/[^0-9.]+/g, "");
-        const price = parseFloat(numericPriceText);
-
-        const ratingElement = await element.$(".a-icon-star-small .a-icon-alt");
-        if (ratingElement) {
-          const ratingText = await ratingElement.evaluate(
-            (el) => el.textContent
-          );
-          console.log("Rating:", ratingText);
-          // Parse the rating value from the text
-          const rating = parseFloat(ratingText.split(" ")[0]);
-          // Do something with the rating value (store it, update it, etc.)
-        }
-        if (isNaN(price)) {
-          console.log("Invalid price. Skipping...");
-          continue;
-        }
-
-        const newProduct = await Product.create({
-          name,
-          img,
-          url,
-          price,
-          search: newSearch._id,
-          rating,
-        });
-
-        console.log("New Product:", newProduct);
-        products.push(newProduct);
-        previousProducts.push(newProduct);
+    for (const element of productElements) {
+      const nameElement = await element.$(
+        ".a-size-base-plus.a-color-base.a-text-normal"
+      );
+      if (!nameElement) {
+        console.log("Name element not found. Skipping...");
+        continue;
       }
-    } else {
-      return res.json("This product search is already created");
+
+      const name = await nameElement.evaluate((el) => el.textContent.trim());
+
+      const img = await element.$eval("img.s-image", (img) => img.src);
+      const urlHandle = await element.$(`h2 a`);
+      const url = await (await urlHandle.getProperty("href")).jsonValue();
+      await page.waitForSelector(".a-price .a-offscreen", { visible: true });
+      const priceText = await page.$eval(
+        ".a-price .a-offscreen",
+        (span) => span.textContent
+      );
+
+      const numericPriceText = priceText.replace(/[^0-9.]+/g, "");
+      const price = parseFloat(numericPriceText);
+
+      const ratingElement = await element.$(".a-icon-star-small .a-icon-alt");
+
+      if (!ratingElement) {
+        console.log("Rating element not found. Skipping...");
+        continue;
+      }
+      const ratingText = await ratingElement.evaluate((el) => el.textContent);
+      console.log("Rating:", ratingText);
+      const rating = parseFloat(ratingText.split(" ")[0]);
+
+      if (isNaN(price)) {
+        console.log("Invalid price. Skipping...");
+        continue;
+      }
+
+      const newProduct = await Product.create({
+        name,
+        img,
+        url,
+        price,
+        search: newSearch._id,
+        rating,
+      });
+
+      console.log("New Product:", newProduct);
+      products.push(newProduct);
+      previousProducts.push(newProduct);
     }
-
     await browser.close();
-
     res.json(products);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -115,13 +107,24 @@ app.get("/api/productText", async (req, res) => {
 
 //get products relate to a search
 app.get("/api/products", async (req, res) => {
-  const { searchItem } = req.body;
-
+  const { id } = req.query; // Use req.query to access query parameters
   try {
+    const findSearches = await Search.findById(id);
+
+    if (!findSearches) {
+      return res.status(404).json({ error: "Search not found" });
+    }
+
+    const products = await Product.find({ search: findSearches._id }).populate(
+      "search"
+    );
+
+    res.status(200).json(products);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
 // schedule update
 async function scheduleComparison() {
   cron.schedule("* * * * *", async () => {
