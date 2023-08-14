@@ -51,12 +51,13 @@ app.post("/api/scrape", async (req, res) => {
       const img = await element.$eval("img.s-image", (img) => img.src);
       const urlHandle = await element.$(`h2 a`);
       const url = await (await urlHandle.getProperty("href")).jsonValue();
-      await page.waitForSelector(".a-price .a-offscreen", { visible: true });
-      const priceText = await page.$eval(
-        ".a-price .a-offscreen",
-        (span) => span.textContent
-      );
+      const priceElement = await element.$(".a-price .a-offscreen");
+      if (!priceElement) {
+        console.log("Price element not found. Skipping...");
+        continue;
+      }
 
+      const priceText = await priceElement.evaluate((span) => span.textContent);
       const numericPriceText = priceText.replace(/[^0-9.]+/g, "");
       const price = parseFloat(numericPriceText);
 
