@@ -15,14 +15,21 @@ const ProductSchema = mongoose.Schema(
       type: Number,
     },
     search: {
-      type: Number,
-      default: 0,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Search",
     },
     priceChange: {
       type: Number,
       default: 0,
     },
     priceChangePercentage: {
+      type: Number,
+      default: 0,
+    },
+    rating: {
+      type: Number,
+    },
+    ratingChange: {
       type: Number,
       default: 0,
     },
