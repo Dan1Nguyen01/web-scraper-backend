@@ -131,8 +131,8 @@ app.get("/api/products", async (req, res) => {
 
 // schedule update
 async function scheduleComparison() {
-  cron.schedule("0 0 0 * *", async () => {
-    console.log("Minutely comparison...");
+  cron.schedule("0 0 * * *", async () => {
+    console.log("Dayly comparison...");
 
     for (const product of previousProducts) {
       const response = await axios.get(product.url);
