@@ -17,7 +17,7 @@ app.use(express.json());
 app.use(express.static("./build file/build"));
 
 mongoose
-  .connect(process.env.MONGO_URL|| "mongodb+srv://dannguyen062601:Hd25052021@webscraperproducts.3wvobv6.mongodb.net/")
+  .connect(process.env.MONGO_URL)
   .then(() => {
     console.log("Data based connected! ");
   })
