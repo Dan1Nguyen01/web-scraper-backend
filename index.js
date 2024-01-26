@@ -29,11 +29,15 @@ const previousProducts = [];
 app.post("/api/scrape", async (req, res) => {
   const { searchItem } = req.body;
   try {
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({ headless: "new" });
     const page = await browser.newPage();
     const amazonUrl = `${AMAZON}s?k=${encodeURIComponent(searchItem)}`;
     await page.goto(amazonUrl);
-    await page.waitForSelector(`.s-card-container`);
+    console.log('Before waiting for selector');
+    await page.waitForSelector('.s-card-container', { timeout: 60000 });
+    console.log('After waiting for selector');
+
+
 
     const products = [];
     const productElements = await page.$$(`.s-card-container`);
